@@ -4,9 +4,11 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
 )
 
 type DBConfig struct {
@@ -36,13 +38,18 @@ type Config struct {
 }
 
 func (c *Config) readConfig() error {
+	err := godotenv.Load() // Memanggil .env
+	if err != nil {
+		return fmt.Errorf("error loading .env file: %v", err)
+	}
+
 	c.DBConfig = DBConfig{
-		Host:     "localhost",
-		Port:     "5432",
-		Database: "edulearn_db", // Nama Database
-		Username: "postgres",
-		Password: "04042001",
-		Driver:   "postgres",
+		Host:     os.Getenv("DB_HOST"),
+		Port:     os.Getenv("DB_PORT"),
+		Database: os.Getenv("DB_NAME"),
+		Username: os.Getenv("DB_USER"),
+		Password: os.Getenv("DB_PASSWORD"),
+		Driver:   os.Getenv("DB_DRIVER"),
 	}
 
 	c.APIConfig = APIConfig{
@@ -50,9 +57,9 @@ func (c *Config) readConfig() error {
 	}
 
 	c.TokenConfig = TokenConfig{
-		ApplicationName: "Edu Learn", // Nama Aplikasi
-		JWTSignatureKey: []byte("Edu Learn JWT"), // Signature Key JWT
-		JWTSigningMethod: jwt.SigningMethodHS256,
+		ApplicationName:     os.Getenv("APPLICATION_NAME"),   
+		JWTSignatureKey:     []byte(os.Getenv("JWT_SECRET")), 
+		JWTSigningMethod:    jwt.SigningMethodHS256,
 		AccessTokenLifeTime: time.Duration(1) * time.Hour, // 1 jam
 	}
 
