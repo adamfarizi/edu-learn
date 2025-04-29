@@ -3,6 +3,7 @@ package middleware
 import (
 	"edu-learn/model"
 	"edu-learn/utils/service"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -59,4 +60,46 @@ func (a *authMiddleware) RequireToken(roles ...string) gin.HandlerFunc {
 
 func NewAuthMiddleware(jwtService service.JwtService) AuthMiddleware {
 	return &authMiddleware{jwtService: jwtService}
+}
+
+// ExtractUser => Ambil user dari Context
+func ExtractUser(c *gin.Context) (model.User, error) {
+	user, exists := c.Get("user")
+	if !exists {
+		return model.User{}, fmt.Errorf("user not found in context")
+	}
+
+	userData, ok := user.(model.User)
+	if !ok {
+		return model.User{}, fmt.Errorf("invalid user data type")
+	}
+
+	return userData, nil
+}
+
+// ExtractUserID => Ambil userID dari Context
+func ExtractUserID(c *gin.Context) (int, error) {
+	user, err := ExtractUser(c)
+	if err != nil {
+		return 0, err
+	}
+	return user.ID, nil
+}
+
+// ExtractUserRole => Ambil role user dari Context
+func ExtractUserRole(c *gin.Context) (string, error) {
+	user, err := ExtractUser(c)
+	if err != nil {
+		return "", err
+	}
+	return user.Role, nil
+}
+
+// IsAdmin => Cek apakah user admin
+func IsAdmin(c *gin.Context) bool {
+	user, err := ExtractUser(c)
+	if err != nil {
+		return false
+	}
+	return user.Role == "admin"
 }

@@ -27,6 +27,8 @@ func (c *courseController) Route() {
 		instructorRoutes.PUT("/:id", c.updateCourse)
 		instructorRoutes.DELETE("/:id", c.deleteCourse)
 	}
+
+	c.rg.GET("/users/:id/courses", c.authMiddleware.RequireToken("student"), c.getCoursesByUserID)
 }
 
 func (c *courseController) getAllCourses(ctx *gin.Context) {
@@ -161,6 +163,36 @@ func (c *courseController) deleteCourse(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Course deleted successfully"})
+}
+
+func (c *courseController) getCoursesByUserID(ctx *gin.Context) {
+	idParam := ctx.Param("id")
+
+	userID, err := strconv.Atoi(idParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid user ID"})
+		return
+	}
+
+	courses, err := c.useCase.GetCoursesByUserID(userID)
+	if err != nil {
+		if err.Error() == "no courses found" {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "No courses found"})
+		} else if err.Error() == "forbidden: only students can access their courses" {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+
+	ctx.JSON(http.StatusOK, struct {
+		Message string         `json:"message"`
+		Data    []model.Course `json:"data"`
+	}{
+		Message: "Course data retrieved successfully",
+		Data:    courses,
+	})
 }
 
 func NewCourseController(useCase usecase.CourseUseCase, rg *gin.RouterGroup, authMiddleware middleware.AuthMiddleware) *courseController {

@@ -18,6 +18,7 @@ type CourseRepository interface {
 	GetCourseById(id int) (model.Course, error)
 	UpdateCourse(id int, course *model.Course) (model.Course, error)
 	DeleteCourse(id int) error
+	GetCoursesByUserID(userID int) ([]model.Course, error)
 }
 
 func (c *courseRepository) CreateCourse(course *model.Course) (model.Course, error) {
@@ -102,6 +103,24 @@ func (c *courseRepository) DeleteCourse(id int) error {
 	}
 
 	return nil
+}
+
+func (c *courseRepository) GetCoursesByUserID(userID int) ([]model.Course, error) {
+	var courses []model.Course
+
+	err := c.db.
+		Joins("JOIN enrollments ON enrollments.course_id = courses.id").
+		Where("enrollments.student_id = ?", userID).
+		Find(&courses).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to get courses: %w", err)
+	}
+
+	if len(courses) == 0 {
+		return nil, fmt.Errorf("no courses found")
+	}
+
+	return courses, nil
 }
 
 func NewCourseRepository(db *gorm.DB) CourseRepository {

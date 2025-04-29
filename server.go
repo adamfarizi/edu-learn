@@ -18,13 +18,14 @@ import (
 
 type Server struct {
 	// Instean usecase
-	materialUC usecase.MaterialUseCase
-	courseUC   usecase.CourseUseCase
-	userUC     usecase.UserUseCase
-	authUC     usecase.AuthenticationUseCase
-	jwtService service.JwtService
-	engine     *gin.Engine
-	host       string
+	enrollmentUC usecase.EnrollmentUseCase
+	materialUC   usecase.MaterialUseCase
+	courseUC     usecase.CourseUseCase
+	userUC       usecase.UserUseCase
+	authUC       usecase.AuthenticationUseCase
+	jwtService   service.JwtService
+	engine       *gin.Engine
+	host         string
 }
 
 func NewServer() *Server {
@@ -44,11 +45,13 @@ func NewServer() *Server {
 	userRepo := repository.NewUserRepository(db)
 	courseRepo := repository.NewCourseRepository(db)
 	materialRepo := repository.NewMaterialRepository(db)
+	enrollemtRepo := repository.NewEnrollmentRepository(db)
 
 	// Instean usecase
 	userUseCase := usecase.NewUserUseCase(userRepo)
 	courseUseCase := usecase.NewCourseUsecase(courseRepo, userRepo)
 	materialUseCase := usecase.NewMaterialUseCase(materialRepo, courseRepo)
+	enrollmentUseCase := usecase.NewEnrollmentUseCase(enrollemtRepo)
 
 	// Auth usecase
 	authUseCase := usecase.NewAuthenticationUsecase(userUseCase, jwtService)
@@ -59,13 +62,14 @@ func NewServer() *Server {
 
 	return &Server{
 		// Instean usecase
-		materialUC: materialUseCase,
-		courseUC:   courseUseCase,
-		userUC:     userUseCase,
-		authUC:     authUseCase,
-		jwtService: jwtService,
-		engine:     engine,
-		host:       host,
+		enrollmentUC: enrollmentUseCase,
+		materialUC:   materialUseCase,
+		courseUC:     courseUseCase,
+		userUC:       userUseCase,
+		authUC:       authUseCase,
+		jwtService:   jwtService,
+		engine:       engine,
+		host:         host,
 	}
 }
 
@@ -79,6 +83,7 @@ func (s *Server) initRoute() {
 	controller.NewUserController(s.userUC, rg, authMiddleware).Route()
 	controller.NewCourseController(s.courseUC, rg, authMiddleware).Route()
 	controller.NewMaterialController(s.materialUC, rg, authMiddleware).Route()
+	controller.NewEnrollmentController(s.enrollmentUC, rg, authMiddleware).Route()
 }
 
 func (s *Server) Run() {

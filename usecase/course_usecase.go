@@ -7,7 +7,7 @@ import (
 )
 
 type courseUseCase struct {
-	repo repository.CourseRepository
+	repo     repository.CourseRepository
 	repoUser repository.UserRepository
 }
 
@@ -17,11 +17,12 @@ type CourseUseCase interface {
 	GetCourseById(id int) (model.Course, error)
 	UpdateCourse(id int, course *model.Course) (model.Course, error)
 	DeleteCourse(id int) error
+	GetCoursesByUserID(userID int) ([]model.Course, error)
 }
 
 func (c *courseUseCase) CreateCourse(course *model.Course) (model.Course, error) {
 	idInstructor := course.InstructorID
-	
+
 	_, err := c.repoUser.GetUserById(idInstructor)
 	if err != nil {
 		return model.Course{}, fmt.Errorf("instructor not found")
@@ -64,6 +65,19 @@ func (c *courseUseCase) DeleteCourse(id int) error {
 	}
 
 	return c.repo.DeleteCourse(id)
+}
+
+func (c *courseUseCase) GetCoursesByUserID(userID int) ([]model.Course, error) {
+	user, err := c.repoUser.GetUserById(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if user.Role != "student" {
+		return []model.Course{}, fmt.Errorf("forbidden: only students can access their courses")
+	}
+
+	return c.repo.GetCoursesByUserID(userID)
 }
 
 func NewCourseUsecase(repo repository.CourseRepository, repoUser repository.UserRepository) CourseUseCase {
